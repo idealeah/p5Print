@@ -1,0 +1,22 @@
+
+#ml5Canvas{
+    float:left;
+}
+
+#myCanvas{
+    float: right;
+}
+
+body{
+    padding:0;
+    margin:0;
+    border: 0;
+}
+
+.screen{
+    display: flex;
+    flex-flow: nowrap;
+    padding:0;
+    margin:0;
+    vertical-align: top;
+}
