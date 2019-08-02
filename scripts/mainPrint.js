@@ -1,6 +1,6 @@
 // Create a new poseNet method
-let poseNet;
-let poseNet1;
+//let poseNet;
+//let poseNet1;
 let poses = [];
 let centers = {
   vid: {
@@ -73,8 +73,8 @@ let poseData = {
 
 let interval = 20;
 let time = 0;
-let playingVid = false;
-let playingCam = false;
+//let playingVid = false;
+//let playingCam = false;
 let test = 0; 
 
 //gCode data
@@ -102,11 +102,11 @@ let portName = 'COM4';  // fill in your serial port name here
 let options = { baudrate: 115200}; 
 
 //load video
-function preload() {
+/* function preload() {
   video = createVideo(["assets/dance_Trim.mp4"]);
   video.width = 640; 
   video.height = 480;
-}
+} */
 
 function setup() {
   //scale to media ratio
@@ -117,12 +117,12 @@ function setup() {
   shapeLine = color(255, 255, 255); 
   morphLine = color(255, 0, 0); 
 
-  camera = createCapture(VIDEO);
-  camera.size(640, 480);
+/*   camera = createCapture(VIDEO);
+  camera.size(640, 480); */
 
 /*   let max = Math.max(camera.width, video.width);
   let min = Math.min(camera.width, video.width); */
-  inputRatio = video.width/camera.width;
+  //inputRatio = video.width/camera.width;
 
   for (let i = 0; i < circleOrder.length; i++) {
     poseData.vid.shape.push(createVector());
@@ -166,33 +166,36 @@ function setup() {
   let vidResults = [];
   let camResults = [];
 
-  //set up pose detection for video
+/*   //set up pose detection for video
   poseNet = ml5.poseNet(video, modelLoaded, { maxPoseDetections: 1});
   poseNet.on("pose", function(results) {
     vidResults = results;
     //console.log(results);
   });
-
-  //set up pose detection for camera
+ */
+ /*  //set up pose detection for camera
   poseNet1 = ml5.poseNet(camera, modelLoaded, { maxPoseDetections: 1});
   poseNet1.on("pose", function(results) {
     camResults = results;
     //store raw data
     poses = { vid: vidResults, cam: camResults };
     //console.log(poses);
-  });
+  }); */
 
   frameRate(frames);
-  video.hide();
-  camera.hide();
+/*   video.hide();
+  camera.hide(); */
 }
 
 //draw images on screen
 function draw() {
-  if (playingCam == true) {
-/*     tint(255, 127); // Display at half opacity
-    image(video, 0, 0, width, height);
-    image(camera, 0, 0, width, height); */
+
+
+ // for let x = 0; 
+
+
+
+/*   if (playingCam == true) {
     push();
     tint(255, 127); // Display at half opacity
     //translate(-width/6, 0);
@@ -215,9 +218,9 @@ function draw() {
     //rect(0, 0, width/5.8, height*1.2);
     //rect(0, 0, width/4.2, height*1.2);    
     pop();
-  }
+  } */
 }
-
+/* 
 //get new camera/video data and add to pose array
 function changePosition(whichPose) {
   playingCam = false;
@@ -244,8 +247,8 @@ function changePosition(whichPose) {
       poseData[whichPose].dist = maxDist;
     }
   }
-}
-
+} */
+/* 
 function changes(){
  // console.log(poses.vid);
   changePosition("vid");
@@ -259,9 +262,9 @@ function changes(){
 
   lerpLayers();
   init = false;
-}
+} */
 
-//lerp between current and previous images
+/* //lerp between current and previous images
 function lerpLayers() {
    if (poseData.vid.layers.length < poseData.vid.steps && poseData.cam.layers.length < poseData.vid.steps/2) {
     lerpPose("vid", poseData.vid.steps,  poseData.vid.layers.length);
@@ -277,15 +280,7 @@ function lerpLayers() {
     playVideo();
     console.log("playing");
   }
-
-/*   if (poseData.vid.layers.length < poseData.vid.steps && poseData.cam.layers.length < poseData.cam.steps) {
-    lerpPose("vid");
-    lerpPose("cam");
-    ultimaker.newLine();
-  }else{
-    playVideo();
-  } */
-}
+} */
 
 function camUpdate(){
 /*   playingCam = true;
@@ -300,10 +295,8 @@ function camUpdate(){
   lerpLayers();
 }
 
-//calculate lerp steps and positions
+/* //calculate lerp steps and positions
 function lerpPose(whichPose, whichSteps, whichNum) {
-/*   let stepNum = poseData[whichPose].layers.length;
-  let steps = poseData[whichPose].steps; */
   let stepNum = poseData[whichPose].layers.length;
   let steps = whichSteps;
 
@@ -332,6 +325,7 @@ function lerpPose(whichPose, whichSteps, whichNum) {
   });
 }
 
+ */
 //add pose data to circle array, draw
 function poseWrite(whichPose) {
   //center and draw video poses to screen
