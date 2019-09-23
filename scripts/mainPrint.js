@@ -62,13 +62,6 @@ let poseData = {
     steps: 0,
     dist: 0
   },
-  cam: {
-    shape: [],
-    morph: [],
-    layers: [],
-    steps: 0,
-    dist: 0,
-  },
 };
 
 let interval = 20;

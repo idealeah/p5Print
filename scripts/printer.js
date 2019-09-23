@@ -47,11 +47,17 @@ function Printer(bedMin, bedMax, filamentRate, stepSize, filamentWidth) {
     ],
     text: []
   };
-  this.location = {
-    prev: 0,
-    curr: 0,
+  this.position = {
+    prevPoint: 0,
+    currPoint: 0,
     prevLayer: [],
-    currLayer: []
+    currLayerGcode: [],
+    shape: [],
+    morph: [],
+    layers: [],
+    steps: 0,
+    dist: 0,
+    newLayer: true
   };
 
   this.control = {
@@ -69,30 +75,52 @@ function Printer(bedMin, bedMax, filamentRate, stepSize, filamentWidth) {
       this.data.text.push(this.data.printSetup[i]);
     }
 
-    this.location.curr = createVector();
-    this.location.prev = createVector();
+    this.position.currPoint = createVector();
+    this.position.prevPoint = createVector();
+
+    morphLine = color(255, 255, 255, 100); 
+
   };
 
   //user call to print an array
   this.printLayer = function(frameArray) {
-    if (typeof this.location.prevLayer == "undefined" || this.location.prevLayer.length < 1)  {
-      this.location.prevLayer = frameArray;
-      this.location.currLayer = frameArray;
+    console.log("printLayer");
+    //if this is the first layer, initialize previous array data
+    if (
+      typeof this.position.prevLayer == "undefined" ||
+      this.position.prevLayer.length < 1
+    ) {
+      //this.position.currLayer = frameArray;
+      //this.position.prevLayer = frameArray;
+
+      for (let i = 0; i < frameArray.length; i++) {
+        //this.position.shape.push(createVector());
+        this.position.prevLayer.push(createVector());
+        let v = createVector(frameArray[i].x, frameArray[i].y, 0);
+        let k = createVector(frameArray[i].x, frameArray[i].y, 0);
+        this.position.morph.push(v);     
+        this.position.shape.push(v); 
+      }
+      console.log(this.position);
     } else {
-      this.location.currLayer = frameArray;
+      //add layer data to current layer array
+      this.position.shape = frameArray;
     }
-    console.log(this.location);
+
+    console.log(this.position);
+
+    this.updateLayer(frameArray);
+    //print = false;
   };
 
   //clamp values and add data to Gcode
-  this.printPosition = function(whichPose, point, scale, centerX, centerY) {
-    //console.log("currPoint " + point);
+  this.printPosition = function(point, scale) {
+    console.log("currPoint " + point);
     let printX;
     let printY;
-    let bedScale = 1;
     let centerDiff;
-    let printScale = 1.8;
-    let diffScale = 1;
+    let bedScale = 1;
+    let printScale = scale;
 
     //map coordinates to print bed
     if (height > width) {
@@ -115,7 +143,7 @@ function Printer(bedMin, bedMax, filamentRate, stepSize, filamentWidth) {
         this.bounds.min.y,
         this.bounds.max.y * bedScale
       );
-      //console.log(printX, printY);
+      console.log(printX, printY);
     }
 
     //scale size
@@ -133,15 +161,16 @@ function Printer(bedMin, bedMax, filamentRate, stepSize, filamentWidth) {
 
     /*     centerDiff = (this.bounds.max.x -  this.bounds.max.x*scale)/2;
     printX = (eval(printX) - eval(centerDiff)).toFixed(2);  */
-    printX -= 70;
-    printY -= 20;
+    
+    //printX -= 70;
+    //printY -= 20;
 
-    this.location.curr.set(printX, printY);
+    this.position.currPoint.set(printX, printY);
 
     //find distance printer head will move
     this.control.distance = p5.Vector.dist(
-      this.location.curr,
-      this.location.prev
+      this.position.currPoint,
+      this.position.prevPoint
     );
 
     //add to absolute value of filament extruded
@@ -161,119 +190,93 @@ function Printer(bedMin, bedMax, filamentRate, stepSize, filamentWidth) {
 
       let cleanE = this.control.printE.toFixed(5);
       //add to Gcode file
-      text.push("G1 F2100 X" + cleanX + " Y" + cleanY + " E" + cleanE + " \n");
-      this.location.currLayer.push(
+      this.data.text.push("G1 F2100 X" + cleanX + " Y" + cleanY + " E" + cleanE + " \n");
+      this.position.currLayerGcode.push(
         "G1 F2100 X" + cleanX + " Y" + cleanY + " E" + cleanE + " \n"
       );
     }
     //set old x and y coordinates
-    this.location.prev.set(printX, printY);
-  };
-
-  //calculate how many layers to lerp
-  this.changes = function() {
-    changePosition("vid");
-    let maxDist = poseData.vid.dist;
-    //determine how many lerp layers
-    poseData.vid.steps = maxDist / ultimaker.control.wallWidth;
-    console.log("steps " + poseData.vid.steps);
-
-    lerpLayers();
-    init = false;
+    this.position.prevPoint.set(printX, printY);
   };
 
   //get new camera/video data and add to pose array
-  this.changePosition = function(whichPose) {
-    poseData[whichPose].layers.length = [];
-    //test to verify poseNet info is there
-    if (typeof poses[whichPose] !== "undefined") {
-      if (poses[whichPose].length >= 1) {
-        let maxDist = 0;
-        poseData[whichPose].shape = [];
-        poseWrite(whichPose);
+  this.updateLayer = function(frameArray) {
+    let maxDist = 0;
+   // this.position.shape = [];
 
-        for (let i = 0; i < circleOrder.length; i++) {
-          let oldX = poseData[whichPose].morph[i].x;
-          let oldY = poseData[whichPose].morph[i].y;
-          ultimaker.location.prevLayer[whichPose][i].set(oldX, oldY);
-          //console.log(ultimaker.location.prevLayer.vid[i]);
-          let dist = p5.Vector.dist(
-            poseData[whichPose].shape[i],
-            ultimaker.location.prevLayer[whichPose][i]
-          );
-
-          maxDist = Math.max(maxDist, dist);
-        }
-        poseData[whichPose].dist = maxDist;
-      }
+    for (let i = 0; i < frameArray.length; i++) {
+      let oldX = this.position.morph[i].x;
+      let oldY = this.position.morph[i].y;
+      this.position.prevLayer[i].set(oldX, oldY);
+      let dist = p5.Vector.dist(
+        this.position.shape[i],
+        this.position.prevLayer[i]
+      );
+      
+      maxDist = Math.max(maxDist, dist);
     }
+    console.log( this.position.shape, this.position.prevLayer);
+    this.position.dist = maxDist;
+    this.position.steps = maxDist / this.control.wallWidth;
+    console.log(this.position.dist, this.position.steps)
+
+    //do we need to lerp layers
+    this.lerpTest();
   };
 
-  //lerp between current and previous images
-  this.lerpLayers = function() {
-    if (
-      poseData.vid.layers.length < poseData.vid.steps &&
-      poseData.cam.layers.length < poseData.vid.steps / 2
-    ) {
-      lerpPose("vid", poseData.vid.steps, poseData.vid.layers.length);
-      lerpPose("cam", poseData.vid.steps / 2, poseData.cam.layers.length);
-      ultimaker.newLine();
-      console.log(
-        "lerping" + poseData.vid.steps / 2 + " " + poseData.cam.layers.length
-      );
-    } else if (
-      poseData.vid.layers.length < poseData.vid.steps &&
-      poseData.cam.layers.length >= poseData.vid.steps / 2
-    ) {
-      playingCam = true;
-      const moveWait = time =>
-        new Promise(resolve => setTimeout(resolve, time));
-      moveWait(50).then(() => camUpdate());
-      console.log("update");
-    } else if (
-      poseData.vid.layers.length >= poseData.vid.steps &&
-      poseData.cam.layers.length >= poseData.cam.steps / 2
-    ) {
-      playVideo();
-      console.log("playing");
+  //check to see if lerping is needed
+  this.lerpTest = function() {
+    console.log("lerpTest");
+    if (this.position.layers.length < this.position.steps) {
+      console.log(this.position.layers.length, this.position.steps);
+      console.log("lerping layer: " + this.position.layers.length);
+      this.lerpPose(this.position.steps, this.position.layers.length);
+      //ultimaker.newLine();
+    } else if (this.position.layers.length >= this.position.steps) {
+      this.position.newLayer = true;
+      this.position.layers.length = 0;
+      this.position.steps = 0;
+      console.log(this.position.layers.length, this.position.steps);
+      console.log("ready for new layer " + this.position.newLayer);
+    } else{
+      console.log("nopppe");
     }
   };
 
   //calculate lerp steps and positions
-  this.lerpPose = function(whichPose, whichSteps, whichNum) {
-    /*   let stepNum = poseData[whichPose].layers.length;
-    let steps = poseData[whichPose].steps; */
-    let stepNum = poseData[whichPose].layers.length;
+  this.lerpPose = function(whichSteps, whichNum) {
+    let stepNum = this.position.layers.length;
     let steps = whichSteps;
 
     let percent = 1 / steps;
     let lerpPoint = stepNum * percent;
 
-    console.log("stepNum " + whichPose + stepNum);
-    console.log("percent lerp " + whichPose + stepNum * percent);
+    console.log("step number " +  stepNum);
+    console.log("percent lerp " +  stepNum * percent);
 
-    for (let i = 0; i < circleOrder.length; i++) {
-      let v1 = poseData[whichPose].shape[i]; //position to move to
-      let v2 = ultimaker.location.prevLayer[whichPose][i]; //position to move from
+    console.log(this.position.morph, this.position.shape, this.position.prevLayer);
+    
+    for (let i = 0; i < this.position.shape.length; i++) {
+      let v1 = this.position.shape[i]; //position to move to
+      let v2 = this.position.prevLayer[i]; //position to move from
       let v3 = createVector(); //make a point to map
       v3.set(v2.x, v2.y);
       pointX = map(lerpPoint, 0, 1, v2.x, v1.x);
       pointY = map(lerpPoint, 0, 1, v2.y, v1.y);
-      poseData[whichPose].morph[i].set(pointX, pointY);
+      this.position.morph[i].set(pointX, pointY);
     }
 
     //draw to screen
-    poseDraw(poseData[whichPose].morph, morphLine);
+    this.poseDraw(this.position.morph, morphLine);
 
     //send to printer
-    poseData[whichPose].morph.forEach(v => {
-      ultimaker.printPosition(
-        v,
-        inputRatio,
-        torsoBox.pos.center.x,
-        torsoBox.pos.center.y
-      );
-    });
+    this.position.morph.forEach(v => {
+      this.printPosition(v, 1);
+    }); 
+
+    this.position.layers.length += 1;
+    this.newLine();
+    this.lerpTest();
   };
 
   //increase z absolute
@@ -282,24 +285,25 @@ function Printer(bedMin, bedMax, filamentRate, stepSize, filamentWidth) {
     if (this.control.printZ > 177) {
       this.control.printZ = 0.15;
       this.control.printE = 0;
-      text.push("NEW FILE!!!!!!!!!!!!!! \n");
+      this.data.text.push("NEW FILE!!!!!!!!!!!!!! \n");
     }
     let cleanZ = this.control.printZ.toFixed(2);
-    text.push("G1 Z" + cleanZ + " F1200 \n");
-    this.location.currLayer.push("G1 Z" + cleanZ + " F1200 \n");
+    this.data.text.push("G1 Z" + cleanZ + " F1200 \n");
+    this.position.currLayerGcode.push("G1 Z" + cleanZ + " F1200 \n");
     console.log("new line");
   };
 
   //finalize g code
-  this.endGCode = function() {
+  this.endGCode = function(){
     //ultimaker
     /*     text.push("G10 \n");
     text.push("M107 \n");
     text.push("M82 ;absolute extrusion mode \n");
     text.push(";End of Gcode"); */
-
+    console.log("endGcode");
+    console.log(this.data.text);
     for (let i = 0; i < this.data.printFinish.length; i++) {
-      text.push(this.data.printFinish[i]);
+      this.data.text.push(this.data.printFinish[i]);
     }
     /*     if (printerConnect == true) {
       serial.write("M107 \n");
@@ -313,6 +317,61 @@ function Printer(bedMin, bedMax, filamentRate, stepSize, filamentWidth) {
       serial.write("G90 ;absolute positioning \n");
     } */
   };
+
+  this.poseDraw = function(whichShape, color){
+    push();
+    //translate(0, 0);
+    //let resize = 1;
+    beginShape();
+    noFill();
+    stroke(color);
+    whichShape.forEach(v => {
+        vertex(v.x, v.y);
+    });
+    endShape(CLOSE);
+    pop();
+  }
+
+    //when gCode is downloaded
+  this.gCodeGet = function() {
+    this.endGCode();
+    //assemble text array as string
+    let addText = this.data.text.join("");
+    console.log(addText);
+
+    //see if there is anything to download
+    if (this.data.text === undefined || this.data.text.length == 0) {
+      alert("no data");
+      return false;
+      //download gCode as text file
+    } else {
+      var element = document.createElement("a");
+      element.setAttribute(
+        "href",
+        "data:text/plain;charset=utf-8," + encodeURIComponent(addText)
+      );
+      element.setAttribute("download", "PrintData.gcode");
+
+      element.style.display = "none";
+      document.body.appendChild(element);
+
+      element.click();
+
+      document.body.removeChild(element);
+      return false;
+    }
+  }
+}
+
+
+this.mousePressed = function() {
+  let d = mouseX;
+  let h = mouseY;
+
+  if (d <= width/2 && h <= height/2) {
+    ultimaker.gCodeGet();
+
+  }
 }
 
 function clamp(val, min, max) {
