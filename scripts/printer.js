@@ -69,7 +69,7 @@ function Printer(bedMin, bedMax, filamentRate, stepSize, filamentWidth) {
     wallWidth: filamentWidth
   };
 
-  this.initialize = function() {
+  this.initialize = function () {
     //prusa i3
     for (let i = 0; i < this.data.printSetup.length; i++) {
       this.data.text.push(this.data.printSetup[i]);
@@ -78,12 +78,12 @@ function Printer(bedMin, bedMax, filamentRate, stepSize, filamentWidth) {
     this.position.currPoint = createVector();
     this.position.prevPoint = createVector();
 
-    morphLine = color(255, 255, 255, 100); 
+    morphLine = color(255, 255, 255, 100);
 
   };
 
   //user call to print an array
-  this.printLayer = function(frameArray) {
+  this.printLayer = function (frameArray) {
     console.log("printLayer");
     //if this is the first layer, initialize previous array data
     if (
@@ -98,27 +98,26 @@ function Printer(bedMin, bedMax, filamentRate, stepSize, filamentWidth) {
         this.position.prevLayer.push(createVector());
         let v = createVector(frameArray[i].x, frameArray[i].y, 0);
         let k = createVector(frameArray[i].x, frameArray[i].y, 0);
-        this.position.morph.push(v);     
-        this.position.shape.push(v); 
+        this.position.morph.push(v);
+        this.position.shape.push(k);
       }
-      console.log(this.position);
+      //console.log(this.position);
     } else {
       //add layer data to current layer array
       this.position.shape = frameArray;
     }
 
-    console.log(this.position);
+    //console.log(this.position);
 
     this.updateLayer(frameArray);
     //print = false;
   };
 
   //clamp values and add data to Gcode
-  this.printPosition = function(point, scale) {
-    console.log("currPoint " + point);
+  this.printPosition = function (point, scale) {
+    //console.log("currPoint " + point);
     let printX;
     let printY;
-    let centerDiff;
     let bedScale = 1;
     let printScale = scale;
 
@@ -143,7 +142,7 @@ function Printer(bedMin, bedMax, filamentRate, stepSize, filamentWidth) {
         this.bounds.min.y,
         this.bounds.max.y * bedScale
       );
-      console.log(printX, printY);
+      //console.log(printX, printY);
     }
 
     //scale size
@@ -161,7 +160,7 @@ function Printer(bedMin, bedMax, filamentRate, stepSize, filamentWidth) {
 
     /*     centerDiff = (this.bounds.max.x -  this.bounds.max.x*scale)/2;
     printX = (eval(printX) - eval(centerDiff)).toFixed(2);  */
-    
+
     //printX -= 70;
     //printY -= 20;
 
@@ -200,9 +199,9 @@ function Printer(bedMin, bedMax, filamentRate, stepSize, filamentWidth) {
   };
 
   //get new camera/video data and add to pose array
-  this.updateLayer = function(frameArray) {
+  this.updateLayer = function (frameArray) {
     let maxDist = 0;
-   // this.position.shape = [];
+    // this.position.shape = [];
 
     for (let i = 0; i < frameArray.length; i++) {
       let oldX = this.position.morph[i].x;
@@ -212,23 +211,23 @@ function Printer(bedMin, bedMax, filamentRate, stepSize, filamentWidth) {
         this.position.shape[i],
         this.position.prevLayer[i]
       );
-      
+
       maxDist = Math.max(maxDist, dist);
     }
-    console.log( this.position.shape, this.position.prevLayer);
+    //console.log(this.position.shape, this.position.prevLayer);
     this.position.dist = maxDist;
     this.position.steps = maxDist / this.control.wallWidth;
-    console.log(this.position.dist, this.position.steps)
+    //console.log(this.position.dist, this.position.steps)
 
     //do we need to lerp layers
     this.lerpTest();
   };
 
   //check to see if lerping is needed
-  this.lerpTest = function() {
+  this.lerpTest = function () {
     console.log("lerpTest");
     if (this.position.layers.length < this.position.steps) {
-      console.log(this.position.layers.length, this.position.steps);
+      //console.log(this.position.layers.length, this.position.steps);
       console.log("lerping layer: " + this.position.layers.length);
       this.lerpPose(this.position.steps, this.position.layers.length);
       //ultimaker.newLine();
@@ -236,26 +235,26 @@ function Printer(bedMin, bedMax, filamentRate, stepSize, filamentWidth) {
       this.position.newLayer = true;
       this.position.layers.length = 0;
       this.position.steps = 0;
-      console.log(this.position.layers.length, this.position.steps);
+      //console.log(this.position.layers.length, this.position.steps);
       console.log("ready for new layer " + this.position.newLayer);
-    } else{
+    } else {
       console.log("nopppe");
     }
   };
 
   //calculate lerp steps and positions
-  this.lerpPose = function(whichSteps, whichNum) {
+  this.lerpPose = function (whichSteps, whichNum) {
     let stepNum = this.position.layers.length;
     let steps = whichSteps;
 
     let percent = 1 / steps;
     let lerpPoint = stepNum * percent;
 
-    console.log("step number " +  stepNum);
-    console.log("percent lerp " +  stepNum * percent);
+    console.log("step number " + stepNum);
+    console.log("percent lerp " + stepNum * percent);
 
-    console.log(this.position.morph, this.position.shape, this.position.prevLayer);
-    
+    //console.log(this.position.morph, this.position.shape, this.position.prevLayer);
+
     for (let i = 0; i < this.position.shape.length; i++) {
       let v1 = this.position.shape[i]; //position to move to
       let v2 = this.position.prevLayer[i]; //position to move from
@@ -272,7 +271,7 @@ function Printer(bedMin, bedMax, filamentRate, stepSize, filamentWidth) {
     //send to printer
     this.position.morph.forEach(v => {
       this.printPosition(v, 1);
-    }); 
+    });
 
     this.position.layers.length += 1;
     this.newLine();
@@ -280,7 +279,7 @@ function Printer(bedMin, bedMax, filamentRate, stepSize, filamentWidth) {
   };
 
   //increase z absolute
-  this.newLine = function() {
+  this.newLine = function () {
     this.control.printZ += this.control.zIncrease;
     if (this.control.printZ > 177) {
       this.control.printZ = 0.15;
@@ -294,7 +293,7 @@ function Printer(bedMin, bedMax, filamentRate, stepSize, filamentWidth) {
   };
 
   //finalize g code
-  this.endGCode = function(){
+  this.endGCode = function () {
     //ultimaker
     /*     text.push("G10 \n");
     text.push("M107 \n");
@@ -318,7 +317,7 @@ function Printer(bedMin, bedMax, filamentRate, stepSize, filamentWidth) {
     } */
   };
 
-  this.poseDraw = function(whichShape, color){
+  this.poseDraw = function (whichShape, color) {
     push();
     //translate(0, 0);
     //let resize = 1;
@@ -326,18 +325,18 @@ function Printer(bedMin, bedMax, filamentRate, stepSize, filamentWidth) {
     noFill();
     stroke(color);
     whichShape.forEach(v => {
-        vertex(v.x, v.y);
+      vertex(v.x, v.y);
     });
     endShape(CLOSE);
     pop();
   }
 
-    //when gCode is downloaded
-  this.gCodeGet = function() {
+  //when gCode is downloaded
+  this.gCodeGet = function () {
     this.endGCode();
     //assemble text array as string
     let addText = this.data.text.join("");
-    console.log(addText);
+    //console.log(addText);
 
     //see if there is anything to download
     if (this.data.text === undefined || this.data.text.length == 0) {
@@ -364,11 +363,11 @@ function Printer(bedMin, bedMax, filamentRate, stepSize, filamentWidth) {
 }
 
 
-this.mousePressed = function() {
+this.mousePressed = function () {
   let d = mouseX;
   let h = mouseY;
 
-  if (d <= width/2 && h <= height/2) {
+  if (d <= width / 2 && h <= height / 2) {
     ultimaker.gCodeGet();
 
   }
