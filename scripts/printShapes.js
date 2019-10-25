@@ -1,4 +1,4 @@
-function drawCircle(numPoints, x, y, diameter) {
+function drawCircle(array, numPoints, x, y, diameter) {
     let a = 0;
     let b = diameter;
     let offsetx = x - diameter / 2;
@@ -6,14 +6,14 @@ function drawCircle(numPoints, x, y, diameter) {
 
     for (i = 0; i < numPoints; i++) {
         let angle = PI * 2 / numPoints * i;
-        console.log("i= " + i);
-        console.log("angle= " + degrees(angle));
+        //console.log("i= " + i);
+        //console.log("angle= " + degrees(angle));
         let dotx = map(cos(angle), -1, 1, a, b);
         let doty = map(sin(angle), -1, 1, a, b);
         dotx += offsetx;
         doty += offsety;
-        points[i].x = dotx;
-        points[i].y = doty;
+        array[i].x = dotx;
+        array[i].y = doty;
         //console.log(points[i]);
     }
 }
